@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Song Library — Praise Prayer Lanka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&family=Noto+Sans+Sinhala&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* PPL Brand Colors — extracted from logo */
+  --navy:      #0d1117;
+  --navy2:     #161b22;
+  --navy3:     #1c2433;
+  --navy4:     #232d3f;
+
+  --red:       #e8251a;
+  --red-soft:  rgba(232,37,26,0.18);
+  --red-glow:  rgba(232,37,26,0.08);
+  --orange:    #e07820;
+  --orange-soft: rgba(224,120,32,0.18);
+  --green:     #2ea84d;
+  --green-soft: rgba(46,168,77,0.18);
+  --green-glow: rgba(46,168,77,0.08);
+  --white-cross: #f0f4ff;
+
+  /* Glass layers */
+  --glass:     rgba(255,255,255,0.055);
+  --glass2:    rgba(255,255,255,0.038);
+  --glass3:    rgba(255,255,255,0.022);
+  --border:    rgba(255,255,255,0.10);
+  --border2:   rgba(255,255,255,0.06);
+
+  /* Text */
+  --text:      #f0f4ff;
+  --text2:     rgba(240,244,255,0.55);
+  --text3:     rgba(240,244,255,0.30);
+  --text4:     rgba(240,244,255,0.18);
+
+  /* Accent (primary interactive) */
+  --accent:    #e8251a;
+  --accent2:   rgba(232,37,26,0.14);
+  --accent3:   rgba(232,37,26,0.07);
+
+  --shadow:    0 12px 40px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.07) inset;
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.06) inset;
+  --r:         18px;
+  --r-sm:      12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Atmospheric background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 15% -5%, rgba(232,37,26,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 45% at 88% 95%, rgba(46,168,77,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 35% 35% at 50% 50%, rgba(224,120,32,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, rgba(13,17,23,1) 0%, rgba(13,17,23,1) 100%);
+  pointer-events: none; z-index: 0;
+}
+
+/* Subtle noise grain overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+
+/* ── Layout ── */
+#app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Header ── */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  height: 58px;
+  background: rgba(13,17,23,0.82);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.topbar-logo {
+  width: 34px; height: 34px; border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.topbar-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+.topbar-title {
+  font-size: 16px; font-weight: 600; color: var(--text);
+  letter-spacing: -0.02em; flex: 1;
+  line-height: 1;
+}
+.topbar-title span {
+  color: var(--text2); font-size: 12px; font-weight: 400;
+  display: block; margin-top: 2px; letter-spacing: 0;
+}
+
+/* ── Tab switcher — Apple segmented control ── */
+.tabs {
+  display: flex; gap: 0;
+  background: rgba(255,255,255,0.07);
+  border-radius: 10px; padding: 3px;
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 5px 16px; border-radius: 8px; border: none;
+  font-size: 12.5px; font-weight: 500;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  cursor: pointer; transition: all 0.18s ease;
+  background: transparent; color: var(--text2);
+  letter-spacing: -0.01em;
+}
+
+.tab-btn.active {
+  background: rgba(232,37,26,0.85);
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(232,37,26,0.5), 0 1px 0 rgba(255,255,255,0.1) inset;
+}
+
+/* ── Glass card ── */
+.card {
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+
+/* ── Forms ── */
+.page { padding: 24px 16px 80px; max-width: 540px; margin: 0 auto; }
+
+.field { display: flex; flex-direction: column; gap: 7px; }
+
+.field-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text3);
+}
+.field-label span { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text4); }
+
+.input {
+  width: 100%; padding: 11px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  color: var(--text); font-size: 15px;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  outline: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.04) inset;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.input:focus {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(232,37,26,0.55);
+  box-shadow: 0 0 0 3px rgba(232,37,26,0.12), 0 1px 3px rgba(0,0,0,0.2);
+}
+.input::placeholder { color: var(--text4); }
+textarea.input { resize: none; line-height: 1.7; min-height: 60px; overflow: hidden; }
+textarea.input.tamil { font-family: 'Noto Sans Tamil', serif; font-size: 14px; }
+textarea.input.sinhala { font-family: 'Noto Sans Sinhala', serif; font-size: 14px; }
+
+/* ── Tag pills ── */
+.tag-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.tag-pill {
+  background: var(--red-soft);
+  border: 1px solid rgba(232,37,26,0.25);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11.5px; color: #ff7066; font-weight: 500;
+}
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border2); margin: 6px 0; }
+
+/* ── Slides ── */
+.slides-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.slides-hint { font-size: 11px; color: var(--text4); }
+.slides-list { display: flex; flex-direction: column; gap: 8px; }
+
+.slide-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: border-color 0.15s;
+}
+.slide-card:focus-within {
+  border-color: rgba(232,37,26,0.3);
+}
+.slide-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+}
+.slide-card.collapsed .slide-head { border-bottom: none; }
+.slide-num {
+  width: 24px; height: 24px; border-radius: 7px;
+  background: var(--red-soft); border: 1px solid rgba(232,37,26,0.25);
+  color: #ff7066; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.slide-select {
+  flex: 1; background: transparent; border: none;
+  color: var(--text); font-size: 13.5px; font-weight: 500;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  cursor: pointer; outline: none;
+}
+.slide-select option { background: #1c2433; color: var(--text); }
+.slide-actions { display: flex; gap: 3px; margin-left: auto; }
+.icon-btn {
+  width: 26px; height: 26px;
+  background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+  border-radius: 7px; color: var(--text3); font-size: 11px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.13); color: var(--text); }
+.icon-btn.del:hover { background: var(--red-soft); color: #ff7066; border-color: rgba(232,37,26,0.3); }
+.chevron { color: var(--text4); font-size: 10px; margin-left: 2px; transition: transform 0.2s ease; }
+.slide-card.collapsed .chevron { transform: rotate(180deg); }
+.slide-body { padding: 13px 14px 15px; display: flex; flex-direction: column; gap: 11px; }
+
+.add-lang-btn {
+  background: none; border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 9px; color: var(--text3); font-size: 12px;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  padding: 8px 12px; cursor: pointer; width: 100%;
+  transition: border-color 0.18s, color 0.18s;
+}
+.add-lang-btn:hover { border-color: rgba(232,37,26,0.35); color: #ff7066; }
+
+.add-slide-btn {
+  margin-top: 10px; width: 100%; padding: 11px;
+  border-radius: 12px;
+  background: var(--accent3);
+  border: 1px dashed rgba(232,37,26,0.25);
+  color: #ff7066; font-size: 13.5px; font-weight: 500;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.add-slide-btn:hover { background: var(--accent2); border-color: rgba(232,37,26,0.45); }
+
+/* ── Submit ── */
+.submit-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #e8251a 0%, #c41811 100%);
+  border: none;
+  border-radius: 14px; color: #fff;
+  font-size: 15px; font-weight: 600;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  cursor: pointer; letter-spacing: -0.01em;
+  box-shadow: 0 4px 20px rgba(232,37,26,0.45), 0 1px 0 rgba(255,255,255,0.12) inset;
+  transition: transform 0.12s, box-shadow 0.18s, filter 0.15s;
+}
+.submit-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(232,37,26,0.55), 0 1px 0 rgba(255,255,255,0.15) inset;
+}
+.submit-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.95); }
+.submit-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
+.submit-hint { text-align: center; color: var(--text4); font-size: 11px; margin-top: 8px; }
+
+/* ── Success ── */
+.success-wrap { text-align: center; padding: 56px 22px; }
+.success-icon {
+  width: 78px; height: 78px; border-radius: 50%;
+  background: var(--green-soft); border: 1.5px solid rgba(46,168,77,0.4);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+  margin: 0 auto 22px;
+  animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  box-shadow: 0 0 40px rgba(46,168,77,0.2);
+}
+@keyframes popIn { from { transform:scale(0.6);opacity:0; } to { transform:scale(1);opacity:1; } }
+.success-wrap h2 { font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.03em; }
+.success-wrap p { color: var(--text2); font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+.success-wrap p strong { color: var(--text); font-weight: 600; }
+
+/* ── Library view ── */
+.lib-page { padding: 20px 16px 72px; max-width: 800px; margin: 0 auto; }
+.search-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.search-wrap { flex: 1; position: relative; }
+.search-wrap input { padding-left: 36px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; pointer-events: none; }
+.sort-btn {
+  padding: 0 16px; border-radius: 12px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  font-size: 12.5px; font-weight: 500;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  color: var(--text2); cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+.sort-btn.on {
+  color: #ff7066;
+  background: var(--red-soft);
+  border-color: rgba(232,37,26,0.3);
+}
+
+.song-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+
+.song-tile {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s;
+}
+.song-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+  border-color: rgba(255,255,255,0.15);
+}
+.song-tile.open {
+  border-color: rgba(232,37,26,0.4);
+  background: rgba(232,37,26,0.05);
+  box-shadow: 0 0 0 1px rgba(232,37,26,0.15), 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.tile-avatar {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700;
+  margin-bottom: 13px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.tile-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+.tile-artist { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.tile-count { font-size: 11px; color: var(--text3); }
+.tile-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+.tile-tag {
+  font-size: 10px; font-weight: 500; color: #ff7066;
+  background: var(--red-soft); border-radius: 20px; padding: 2px 8px;
+}
+
+/* Song detail panel */
+.detail-panel {
+  margin-top: 10px;
+  background: rgba(22,27,34,0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  animation: expandDown 0.22s cubic-bezier(0.25,0.46,0.45,0.94) both;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+@keyframes expandDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+.detail-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--border2);
+  background: linear-gradient(135deg, rgba(232,37,26,0.06) 0%, rgba(13,17,23,0) 60%);
+}
+.detail-avatar {
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.detail-title { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -0.025em; }
+.detail-artist { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.detail-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 9px; }
+.detail-tag { font-size: 11px; font-weight: 500; color: #ff7066; background: var(--red-soft); border-radius: 20px; padding: 2px 9px; }
+.detail-close {
+  margin-left: auto; width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+  color: var(--text3); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.detail-close:hover { background: rgba(232,37,26,0.15); color: #ff7066; border-color: rgba(232,37,26,0.3); }
+
+.slides-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border2);
+  background: rgba(0,0,0,0.15);
+}
+.slide-tab {
+  padding: 5px 13px; border-radius: 8px; border: none;
+  font-size: 11.5px; font-weight: 500;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  cursor: pointer; transition: all 0.15s;
+  background: transparent; color: var(--text3);
+}
+.slide-tab.active {
+  background: rgba(232,37,26,0.18); color: #ff7066;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  border: 1px solid rgba(232,37,26,0.28);
+}
+.slide-tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+.slide-content { padding: 22px 24px; }
+.slide-content .lyric-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+.slide-content .lyric-text { font-size: 16px; color: var(--text); line-height: 1.9; white-space: pre-line; font-weight: 300; }
+.slide-content .lyric-sub { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border2); }
+.slide-content .lyric-sub .lyric-text { font-size: 14px; color: var(--text2); }
+.slide-content .lyric-sub .lyric-text.tamil { font-family: 'Noto Sans Tamil', serif; }
+.slide-content .lyric-sub .lyric-text.sinhala { font-family: 'Noto Sans Sinhala', serif; }
+
+/* ── Empty/Loading states ── */
+.empty-state { text-align: center; padding: 72px 20px; color: var(--text3); }
+.empty-state .icon { font-size: 40px; margin-bottom: 16px; opacity: 0.35; }
+.empty-state p { font-size: 14px; }
+
+/* ── Error banner ── */
+.error-banner {
+  background: rgba(232,37,26,0.08); border: 1px solid rgba(232,37,26,0.25);
+  border-radius: 12px; padding: 12px 14px; color: #ff7066; font-size: 13px; line-height: 1.5;
+}
+
+/* ── Avatar color overrides for dark mode ── */
+.tile-avatar, .detail-avatar {
+  /* Colors set inline will be dim; we brighten them */
+  filter: brightness(1.1) saturate(0.9);
+}
+
+.hidden { display: none !important; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <img src="icon.png" alt="PPL" onerror="this.parentElement.innerHTML='✝'" />
+    </div>
+    <div class="topbar-title">
+      PPL Presenter <span>Praise Prayer Lanka Church</span>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabAdd" onclick="switchTab('add')">Add Song</button>
+      <button class="tab-btn" id="tabLib" onclick="switchTab('lib')">Library <span id="libCount" style="font-size:11px;opacity:0.55;"></span></button>
+    </div>
+  </header>
+
+  <!-- ADD SONG TAB -->
+  <div id="viewAdd">
+    <!-- Main form -->
+    <div class="page" id="addPage">
+      <div class="card" id="mainCard" style="padding:0;">
+        <div style="padding:22px 20px 24px;display:flex;flex-direction:column;gap:18px;">
+
+          <div class="field">
+            <label class="field-label" for="songTitle">Song Title *</label>
+            <input class="input" id="songTitle" type="text" placeholder="e.g. Amazing Grace" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="songArtist">Artist / Composer</label>
+            <input class="input" id="songArtist" type="text" placeholder="e.g. John Newton" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="songTags">Tags <span>(comma separated)</span></label>
+            <input class="input" id="songTags" type="text" placeholder="worship, Tamil, Christmas…" autocomplete="off" />
+            <div class="tag-pills" id="tagPills"></div>
+          </div>
+
+          <hr class="divider" />
+
+          <div>
+            <div class="slides-header">
+              <span class="field-label" id="slidesCount" style="margin:0">Slides (1)</span>
+              <span class="slides-hint">tap header to collapse</span>
+            </div>
+            <div class="slides-list" id="slidesList"></div>
+            <button class="add-slide-btn" onclick="addSlide()">+ Add Slide</button>
+          </div>
+
+          <div class="error-banner hidden" id="errorBanner">Something went wrong. Please try again.</div>
+
+          <button class="submit-btn" id="submitBtn" disabled onclick="handleSubmit()">Submit Song</button>
+          <p class="submit-hint">Songs are saved locally to your device</p>
+
+        </div>
+      </div>
+
+      <!-- Success screen -->
+      <div class="card hidden" id="successCard">
+        <div class="success-wrap">
+          <div class="success-icon">✓</div>
+          <h2>Song added!</h2>
+          <p><strong id="successTitle"></strong> has been saved to your library.</p>
+          <button class="submit-btn" onclick="resetForm()" style="max-width:240px;margin:0 auto;background:linear-gradient(135deg,#e8251a,#c41811);">Add another song</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIBRARY TAB -->
+  <div id="viewLib" class="hidden">
+    <div class="lib-page">
+      <div class="search-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="input" id="searchInput" type="text" placeholder="Search songs or artists…" oninput="renderLibrary()" autocomplete="off" />
+        </div>
+        <button class="sort-btn" id="sortTitleBtn" onclick="setSort('title')">A–Z</button>
+        <button class="sort-btn" id="sortRecentBtn" onclick="setSort('recent')">Recent</button>
+      </div>
+      <div id="songGrid" class="song-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Storage ──
+const STORAGE_KEY = 'ppl_songs_v1';
+let songs = [];
+let sortBy = 'title';
+let openSongId = null;
+let openSlideIdx = 0;
+
+function loadSongs() {
+  try { songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { songs = []; }
+}
+function saveSongs() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+  updateLibCount();
+}
+function updateLibCount() {
+  const el = document.getElementById('libCount');
+  if (el) el.textContent = songs.length ? `(${songs.length})` : '';
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  document.getElementById('viewAdd').classList.toggle('hidden', tab !== 'add');
+  document.getElementById('viewLib').classList.toggle('hidden', tab !== 'lib');
+  document.getElementById('tabAdd').classList.toggle('active', tab === 'add');
+  document.getElementById('tabLib').classList.toggle('active', tab === 'lib');
+  if (tab === 'lib') renderLibrary();
+}
+
+// ── Helpers ──
+const SLIDE_LABELS = ['Verse 1','Verse 2','Verse 3','Verse 4','Chorus','Pre-Chorus','Bridge','Intro','Outro','Tag','Other'];
+let slides = [];
+let formStatus = null;
+
+function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderTagPills() {
+  const raw = document.getElementById('songTags').value;
+  const pills = document.getElementById('tagPills');
+  const tags = raw.split(',').map(t => t.trim()).filter(Boolean);
+  pills.innerHTML = tags.map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('');
+}
+
+function renderSlides() {
+  const list = document.getElementById('slidesList');
+  list.innerHTML = '';
+  slides.forEach((slide, i) => {
+    const showLang = !!(slide.tamil || slide.sinhala) || !!slide._showLang;
+    const card = document.createElement('div');
+    card.className = 'slide-card' + (slide.collapsed ? ' collapsed' : '');
+    card.innerHTML = `
+      <div class="slide-head">
+        <div class="slide-num">${i+1}</div>
+        <select class="slide-select">${SLIDE_LABELS.map(l=>`<option value="${l}"${slide.label===l?' selected':''}>${l}</option>`).join('')}</select>
+        <div class="slide-actions">
+          ${i>0?`<button class="icon-btn" title="Up" onclick="event.stopPropagation();moveSlide(${i},${i-1})">↑</button>`:''}
+          ${i<slides.length-1?`<button class="icon-btn" title="Down" onclick="event.stopPropagation();moveSlide(${i},${i+1})">↓</button>`:''}
+          ${slides.length>1?`<button class="icon-btn del" title="Delete" onclick="event.stopPropagation();deleteSlide(${i})">✕</button>`:''}
+        </div>
+        <span class="chevron">▲</span>
+      </div>
+      <div class="slide-body" style="${slide.collapsed?'display:none':''}">
+        <div class="field">
+          <label class="field-label">Lyrics (English / Transliteration)</label>
+          <textarea class="input eng-text" placeholder="Line 1&#10;Line 2&#10;Line 3…" rows="2">${escHtml(slide.text||'')}</textarea>
+        </div>
+        ${showLang ? `
+          <div class="field">
+            <label class="field-label">Tamil</label>
+            <textarea class="input tamil" placeholder="வரி 1&#10;வரி 2…" rows="2">${escHtml(slide.tamil||'')}</textarea>
+          </div>
+          <div class="field">
+            <label class="field-label">Sinhala</label>
+            <textarea class="input sinhala" placeholder="පේළිය 1&#10;පේළිය 2…" rows="2">${escHtml(slide.sinhala||'')}</textarea>
+          </div>
+        ` : `<button class="add-lang-btn">+ Add Tamil / Sinhala</button>`}
+      </div>`;
+
+    const head = card.querySelector('.slide-head');
+    const sel = card.querySelector('.slide-select');
+
+    head.addEventListener('click', e => {
+      if (e.target !== head && !e.target.classList.contains('chevron') && e.target.tagName !== 'SELECT' && !e.target.classList.contains('slide-num')) return;
+      slides[i].collapsed = !slides[i].collapsed; renderSlides();
+    });
+    sel.addEventListener('change', e => { e.stopPropagation(); slides[i].label = e.target.value; });
+
+    const engTA = card.querySelector('.eng-text');
+    engTA.addEventListener('input', () => { slides[i].text = engTA.value; autoHeight(engTA); updateSubmitBtn(); });
+    autoHeight(engTA);
+
+    const tamilTA = card.querySelector('.tamil');
+    if (tamilTA) { tamilTA.addEventListener('input', () => { slides[i].tamil = tamilTA.value; autoHeight(tamilTA); }); autoHeight(tamilTA); }
+
+    const sinhalaTA = card.querySelector('.sinhala');
+    if (sinhalaTA) { sinhalaTA.addEventListener('input', () => { slides[i].sinhala = sinhalaTA.value; autoHeight(sinhalaTA); }); autoHeight(sinhalaTA); }
+
+    const aLang = card.querySelector('.add-lang-btn');
+    if (aLang) aLang.addEventListener('click', () => { slides[i]._showLang = true; renderSlides(); });
+
+    list.appendChild(card);
+  });
+  document.getElementById('slidesCount').textContent = `Slides (${slides.length})`;
+}
+
+function addSlide() {
+  slides.push({ label: SLIDE_LABELS[Math.min(slides.length, SLIDE_LABELS.length-1)], text:'', tamil:'', sinhala:'', collapsed:false, _showLang:false });
+  renderSlides();
+}
+function deleteSlide(i) { slides.splice(i,1); renderSlides(); updateSubmitBtn(); }
+function moveSlide(from, to) { const [s] = slides.splice(from,1); slides.splice(to,0,s); renderSlides(); }
+
+function updateSubmitBtn() {
+  const hasTitle = document.getElementById('songTitle').value.trim();
+  const hasLyrics = slides.some(s => s.text.trim());
+  document.getElementById('submitBtn').disabled = !(hasTitle && hasLyrics) || formStatus === 'saving';
+}
+
+function handleSubmit() {
+  const title = document.getElementById('songTitle').value.trim();
+  const artist = document.getElementById('songArtist').value.trim();
+  const tags = document.getElementById('songTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const song = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+    title, artist, tags,
+    slides: slides.filter(s => s.text.trim() || s.tamil?.trim() || s.sinhala?.trim()),
+    createdAt: Date.now()
+  };
+  songs.unshift(song);
+  saveSongs();
+  document.getElementById('successTitle').textContent = `"${title}"`;
+  document.getElementById('mainCard').classList.add('hidden');
+  document.getElementById('successCard').classList.remove('hidden');
+  formStatus = 'success';
+}
+
+function resetForm() {
+  document.getElementById('songTitle').value = '';
+  document.getElementById('songArtist').value = '';
+  document.getElementById('songTags').value = '';
+  document.getElementById('tagPills').innerHTML = '';
+  slides = [{ label:'Verse 1', text:'', tamil:'', sinhala:'', collapsed:false, _showLang:false }];
+  formStatus = null;
+  document.getElementById('submitBtn').textContent = 'Submit Song';
+  document.getElementById('mainCard').classList.remove('hidden');
+  document.getElementById('successCard').classList.add('hidden');
+  renderSlides(); updateSubmitBtn();
+}
+
+// ── Library ──
+const AVATAR_COLORS = [
+  ['rgba(232,37,26,0.22)','#ff7066'],
+  ['rgba(46,168,77,0.22)','#5ddc7a'],
+  ['rgba(224,120,32,0.22)','#ffac55'],
+  ['rgba(100,80,200,0.22)','#b09fff'],
+  ['rgba(0,160,200,0.22)','#5ad4f5'],
+  ['rgba(200,80,160,0.22)','#f07fc0'],
+];
+
+function getAvatarColor(title) {
+  const i = title.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[i];
+}
+function getInitials(title) {
+  return title.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase() || '♪';
+}
+
+function setSort(s) {
+  sortBy = s;
+  document.getElementById('sortTitleBtn').classList.toggle('on', s === 'title');
+  document.getElementById('sortRecentBtn').classList.toggle('on', s === 'recent');
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const grid = document.getElementById('songGrid');
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+
+  let list = [...songs];
+  if (q) list = list.filter(s => s.title.toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q));
+  if (sortBy === 'title') list.sort((a,b) => a.title.localeCompare(b.title));
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🎵</div><p>${songs.length === 0 ? 'No songs yet. Add your first song!' : 'No songs match your search.'}</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  list.forEach(song => {
+    const [bg, fg] = getAvatarColor(song.title);
+    const tile = document.createElement('div');
+    tile.className = 'song-tile' + (openSongId === song.id ? ' open' : '');
+    tile.dataset.id = song.id;
+    tile.innerHTML = `
+      <div class="tile-avatar" style="background:${bg};color:${fg};">${getInitials(song.title)}</div>
+      <div class="tile-title">${escHtml(song.title)}</div>
+      <div class="tile-artist">${escHtml(song.artist || 'Unknown artist')}</div>
+      <div class="tile-meta">
+        <span class="tile-count">${song.slides.length} slide${song.slides.length!==1?'s':''}</span>
+        <div class="tile-tags">${(song.tags||[]).slice(0,2).map(t=>`<span class="tile-tag">${escHtml(t)}</span>`).join('')}</div>
+      </div>`;
+    tile.addEventListener('click', () => toggleSongDetail(song.id));
+    grid.appendChild(tile);
+
+    // Insert detail panel below this tile's row
+    if (openSongId === song.id) {
+      const panel = buildDetailPanel(song);
+      // Insert after the tile
+      grid.appendChild(panel);
+    }
+  });
+}
+
+function toggleSongDetail(id) {
+  if (openSongId === id) { openSongId = null; }
+  else { openSongId = id; openSlideIdx = 0; }
+  renderLibrary();
+}
+
+function buildDetailPanel(song) {
+  const [bg, fg] = getAvatarColor(song.title);
+  const panel = document.createElement('div');
+  panel.className = 'detail-panel';
+  panel.style.gridColumn = '1 / -1';
+
+  const slide = song.slides[openSlideIdx] || {};
+
+  panel.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-avatar" style="background:${bg};color:${fg};">${getInitials(song.title)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="detail-title">${escHtml(song.title)}</div>
+        ${song.artist ? `<div class="detail-artist">${escHtml(song.artist)}</div>` : ''}
+        ${(song.tags||[]).length ? `<div class="detail-tags">${song.tags.map(t=>`<span class="detail-tag">${escHtml(t)}</span>`).join('')}</div>` : ''}
+      </div>
+      <button class="detail-close" onclick="toggleSongDetail('${song.id}')">✕</button>
+    </div>
+    <div class="slides-tabs">
+      ${song.slides.map((s,i) => `<button class="slide-tab${i===openSlideIdx?' active':''}" onclick="setSlideTab('${song.id}',${i})">${escHtml(s.label||'Slide '+(i+1))}</button>`).join('')}
+    </div>
+    <div class="slide-content">
+      <div class="lyric-label">${escHtml(slide.label||'')}</div>
+      <div class="lyric-text">${escHtml(slide.text||'—')}</div>
+      ${slide.tamil ? `<div class="lyric-sub"><div class="lyric-label">Tamil</div><div class="lyric-text tamil">${escHtml(slide.tamil)}</div></div>` : ''}
+      ${slide.sinhala ? `<div class="lyric-sub"><div class="lyric-label">Sinhala</div><div class="lyric-text sinhala">${escHtml(slide.sinhala)}</div></div>` : ''}
+    </div>`;
+
+  return panel;
+}
+
+function setSlideTab(songId, idx) {
+  openSlideIdx = idx;
+  renderLibrary();
+}
+
+// ── Init ──
+document.getElementById('songTitle').addEventListener('input', updateSubmitBtn);
+document.getElementById('songTags').addEventListener('input', renderTagPills);
+document.getElementById('sortTitleBtn').classList.add('on');
+
+loadSongs();
+updateLibCount();
+addSlide();
+updateSubmitBtn();
+</script>
+</body>
+</html>
