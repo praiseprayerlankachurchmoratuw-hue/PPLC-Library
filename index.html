@@ -510,7 +510,7 @@ textarea.input.sinhala { font-family: 'Noto Sans Sinhala', serif; font-size: 14p
           <div class="error-banner hidden" id="errorBanner">Something went wrong. Please try again.</div>
 
           <button class="submit-btn" id="submitBtn" disabled onclick="handleSubmit()">Submit Song</button>
-          <p class="submit-hint">Songs are saved locally to your device</p>
+          <p class="submit-hint" id="submitHint">Connecting to Firebase…</p>
 
         </div>
       </div>
@@ -544,51 +544,104 @@ textarea.input.sinhala { font-family: 'Noto Sans Sinhala', serif; font-size: 14p
 
 </div>
 
-<script>
-// ── Storage ──
-const STORAGE_KEY = 'ppl_songs_v1';
-let songs = [];
-let sortBy = 'title';
-let openSongId = null;
-let openSlideIdx = 0;
+<!-- Firebase SDK (CDN, no build step needed) -->
+<script type="module">
+import { initializeApp }              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy }
+                                      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-function loadSongs() {
-  try { songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { songs = []; }
+// ── Firebase config (same project as the React app) ──
+const firebaseConfig = {
+  apiKey:            'AIzaSyD4GZPScDXfBt9RVY34YwFEeLYxzH3lKt4',
+  authDomain:        'ppl-presenter.firebaseapp.com',
+  projectId:         'ppl-presenter',
+  storageBucket:     'ppl-presenter.firebasestorage.app',
+  messagingSenderId: '168353704965',
+  appId:             '1:168353704965:web:36ee232ebba4f6aa0bc06c'
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── State ──
+let songs       = [];
+let sortBy      = 'title';
+let openSongId  = null;
+let openSlideIdx = 0;
+let slides      = [];
+let formStatus  = null;
+
+// ── Helpers ──
+const SLIDE_LABELS = ['Verse 1','Verse 2','Verse 3','Verse 4','Chorus','Pre-Chorus','Bridge','Intro','Outro','Tag','Other'];
+const AVATAR_COLORS = [
+  ['rgba(232,37,26,0.22)','#ff7066'],
+  ['rgba(46,168,77,0.22)','#5ddc7a'],
+  ['rgba(224,120,32,0.22)','#ffac55'],
+  ['rgba(100,80,200,0.22)','#b09fff'],
+  ['rgba(0,160,200,0.22)','#5ad4f5'],
+  ['rgba(200,80,160,0.22)','#f07fc0'],
+];
+
+function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getAvatarColor(title) { return AVATAR_COLORS[title.charCodeAt(0) % AVATAR_COLORS.length]; }
+function getInitials(title) { return title.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase() || '♪'; }
+
+function setHint(msg) {
+  const el = document.getElementById('submitHint');
+  if (el) el.textContent = msg;
 }
-function saveSongs() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
-  updateLibCount();
-}
+
 function updateLibCount() {
   const el = document.getElementById('libCount');
   if (el) el.textContent = songs.length ? `(${songs.length})` : '';
 }
 
+// ── Firebase: Load songs ──
+async function loadSongs() {
+  setHint('Loading from Firebase…');
+  try {
+    const field = sortBy === 'title' ? 'title' : 'createdAt';
+    const dir   = sortBy === 'title' ? 'asc'   : 'desc';
+    const q     = query(collection(db, 'songs'), orderBy(field, dir));
+    const snap  = await getDocs(q);
+    songs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateLibCount();
+    setHint('Connected to Firebase ✓');
+  } catch (err) {
+    console.error('Firebase load error:', err);
+    setHint('⚠ Could not load from Firebase. Check console.');
+  }
+}
+
+// ── Firebase: Save song ──
+async function saveSongToFirebase(songData) {
+  const ref = await addDoc(collection(db, 'songs'), songData);
+  return ref.id;
+}
+
 // ── Tabs ──
-function switchTab(tab) {
+window.switchTab = async function(tab) {
   document.getElementById('viewAdd').classList.toggle('hidden', tab !== 'add');
   document.getElementById('viewLib').classList.toggle('hidden', tab !== 'lib');
   document.getElementById('tabAdd').classList.toggle('active', tab === 'add');
   document.getElementById('tabLib').classList.toggle('active', tab === 'lib');
-  if (tab === 'lib') renderLibrary();
-}
+  if (tab === 'lib') {
+    await loadSongs();
+    renderLibrary();
+  }
+};
 
-// ── Helpers ──
-const SLIDE_LABELS = ['Verse 1','Verse 2','Verse 3','Verse 4','Chorus','Pre-Chorus','Bridge','Intro','Outro','Tag','Other'];
-let slides = [];
-let formStatus = null;
-
-function autoHeight(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function renderTagPills() {
-  const raw = document.getElementById('songTags').value;
+// ── Tag pills ──
+window.renderTagPills = function() {
+  const raw  = document.getElementById('songTags').value;
   const pills = document.getElementById('tagPills');
   const tags = raw.split(',').map(t => t.trim()).filter(Boolean);
   pills.innerHTML = tags.map(t => `<span class="tag-pill">${escHtml(t)}</span>`).join('');
-}
+};
 
-function renderSlides() {
+// ── Slides ──
+window.renderSlides = function() {
   const list = document.getElementById('slidesList');
   list.innerHTML = '';
   slides.forEach((slide, i) => {
@@ -624,8 +677,7 @@ function renderSlides() {
       </div>`;
 
     const head = card.querySelector('.slide-head');
-    const sel = card.querySelector('.slide-select');
-
+    const sel  = card.querySelector('.slide-select');
     head.addEventListener('click', e => {
       if (e.target !== head && !e.target.classList.contains('chevron') && e.target.tagName !== 'SELECT' && !e.target.classList.contains('slide-num')) return;
       slides[i].collapsed = !slides[i].collapsed; renderSlides();
@@ -648,80 +700,81 @@ function renderSlides() {
     list.appendChild(card);
   });
   document.getElementById('slidesCount').textContent = `Slides (${slides.length})`;
-}
+};
 
-function addSlide() {
+window.addSlide = function() {
   slides.push({ label: SLIDE_LABELS[Math.min(slides.length, SLIDE_LABELS.length-1)], text:'', tamil:'', sinhala:'', collapsed:false, _showLang:false });
   renderSlides();
-}
-function deleteSlide(i) { slides.splice(i,1); renderSlides(); updateSubmitBtn(); }
-function moveSlide(from, to) { const [s] = slides.splice(from,1); slides.splice(to,0,s); renderSlides(); }
+};
+window.deleteSlide = function(i) { slides.splice(i,1); renderSlides(); updateSubmitBtn(); };
+window.moveSlide   = function(from, to) { const [s] = slides.splice(from,1); slides.splice(to,0,s); renderSlides(); };
 
 function updateSubmitBtn() {
-  const hasTitle = document.getElementById('songTitle').value.trim();
+  const hasTitle  = document.getElementById('songTitle').value.trim();
   const hasLyrics = slides.some(s => s.text.trim());
   document.getElementById('submitBtn').disabled = !(hasTitle && hasLyrics) || formStatus === 'saving';
 }
 
-function handleSubmit() {
-  const title = document.getElementById('songTitle').value.trim();
+// ── Submit → Firestore ──
+window.handleSubmit = async function() {
+  const title  = document.getElementById('songTitle').value.trim();
   const artist = document.getElementById('songArtist').value.trim();
-  const tags = document.getElementById('songTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const song = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+  const tags   = document.getElementById('songTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const songData = {
     title, artist, tags,
     slides: slides.filter(s => s.text.trim() || s.tamil?.trim() || s.sinhala?.trim()),
     createdAt: Date.now()
   };
-  songs.unshift(song);
-  saveSongs();
-  document.getElementById('successTitle').textContent = `"${title}"`;
-  document.getElementById('mainCard').classList.add('hidden');
-  document.getElementById('successCard').classList.remove('hidden');
-  formStatus = 'success';
-}
 
-function resetForm() {
-  document.getElementById('songTitle').value = '';
+  formStatus = 'saving';
+  updateSubmitBtn();
+  setHint('Saving to Firebase…');
+
+  try {
+    const newId = await saveSongToFirebase(songData);
+    songs.unshift({ id: newId, ...songData });
+    updateLibCount();
+    document.getElementById('successTitle').textContent = `"${title}"`;
+    document.getElementById('mainCard').classList.add('hidden');
+    document.getElementById('successCard').classList.remove('hidden');
+    formStatus = 'success';
+    setHint('Saved to Firebase ✓');
+  } catch (err) {
+    console.error('Save error:', err);
+    setHint('⚠ Save failed. Check console.');
+    document.getElementById('errorBanner').classList.remove('hidden');
+    document.getElementById('errorBanner').textContent = 'Could not save to Firebase. Check your internet or Firestore rules.';
+    formStatus = null;
+    updateSubmitBtn();
+  }
+};
+
+window.resetForm = function() {
+  document.getElementById('songTitle').value  = '';
   document.getElementById('songArtist').value = '';
-  document.getElementById('songTags').value = '';
+  document.getElementById('songTags').value   = '';
   document.getElementById('tagPills').innerHTML = '';
+  document.getElementById('errorBanner').classList.add('hidden');
   slides = [{ label:'Verse 1', text:'', tamil:'', sinhala:'', collapsed:false, _showLang:false }];
   formStatus = null;
-  document.getElementById('submitBtn').textContent = 'Submit Song';
   document.getElementById('mainCard').classList.remove('hidden');
   document.getElementById('successCard').classList.add('hidden');
   renderSlides(); updateSubmitBtn();
-}
+  setHint('Connected to Firebase ✓');
+};
 
 // ── Library ──
-const AVATAR_COLORS = [
-  ['rgba(232,37,26,0.22)','#ff7066'],
-  ['rgba(46,168,77,0.22)','#5ddc7a'],
-  ['rgba(224,120,32,0.22)','#ffac55'],
-  ['rgba(100,80,200,0.22)','#b09fff'],
-  ['rgba(0,160,200,0.22)','#5ad4f5'],
-  ['rgba(200,80,160,0.22)','#f07fc0'],
-];
-
-function getAvatarColor(title) {
-  const i = title.charCodeAt(0) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[i];
-}
-function getInitials(title) {
-  return title.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase() || '♪';
-}
-
-function setSort(s) {
+window.setSort = async function(s) {
   sortBy = s;
   document.getElementById('sortTitleBtn').classList.toggle('on', s === 'title');
   document.getElementById('sortRecentBtn').classList.toggle('on', s === 'recent');
+  await loadSongs();
   renderLibrary();
-}
+};
 
-function renderLibrary() {
+window.renderLibrary = function() {
   const grid = document.getElementById('songGrid');
-  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const q    = (document.getElementById('searchInput')?.value || '').toLowerCase();
 
   let list = [...songs];
   if (q) list = list.filter(s => s.title.toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q));
@@ -749,18 +802,15 @@ function renderLibrary() {
     tile.addEventListener('click', () => toggleSongDetail(song.id));
     grid.appendChild(tile);
 
-    // Insert detail panel below this tile's row
     if (openSongId === song.id) {
-      const panel = buildDetailPanel(song);
-      // Insert after the tile
-      grid.appendChild(panel);
+      grid.appendChild(buildDetailPanel(song));
     }
   });
-}
+};
 
 function toggleSongDetail(id) {
-  if (openSongId === id) { openSongId = null; }
-  else { openSongId = id; openSlideIdx = 0; }
+  openSongId   = openSongId === id ? null : id;
+  openSlideIdx = 0;
   renderLibrary();
 }
 
@@ -769,9 +819,7 @@ function buildDetailPanel(song) {
   const panel = document.createElement('div');
   panel.className = 'detail-panel';
   panel.style.gridColumn = '1 / -1';
-
   const slide = song.slides[openSlideIdx] || {};
-
   panel.innerHTML = `
     <div class="detail-header">
       <div class="detail-avatar" style="background:${bg};color:${fg};">${getInitials(song.title)}</div>
@@ -780,7 +828,7 @@ function buildDetailPanel(song) {
         ${song.artist ? `<div class="detail-artist">${escHtml(song.artist)}</div>` : ''}
         ${(song.tags||[]).length ? `<div class="detail-tags">${song.tags.map(t=>`<span class="detail-tag">${escHtml(t)}</span>`).join('')}</div>` : ''}
       </div>
-      <button class="detail-close" onclick="toggleSongDetail('${song.id}')">✕</button>
+      <button class="detail-close" onclick="toggleSongDetailGlobal('${song.id}')">✕</button>
     </div>
     <div class="slides-tabs">
       ${song.slides.map((s,i) => `<button class="slide-tab${i===openSlideIdx?' active':''}" onclick="setSlideTab('${song.id}',${i})">${escHtml(s.label||'Slide '+(i+1))}</button>`).join('')}
@@ -788,27 +836,27 @@ function buildDetailPanel(song) {
     <div class="slide-content">
       <div class="lyric-label">${escHtml(slide.label||'')}</div>
       <div class="lyric-text">${escHtml(slide.text||'—')}</div>
-      ${slide.tamil ? `<div class="lyric-sub"><div class="lyric-label">Tamil</div><div class="lyric-text tamil">${escHtml(slide.tamil)}</div></div>` : ''}
+      ${slide.tamil   ? `<div class="lyric-sub"><div class="lyric-label">Tamil</div><div class="lyric-text tamil">${escHtml(slide.tamil)}</div></div>` : ''}
       ${slide.sinhala ? `<div class="lyric-sub"><div class="lyric-label">Sinhala</div><div class="lyric-text sinhala">${escHtml(slide.sinhala)}</div></div>` : ''}
     </div>`;
-
   return panel;
 }
 
-function setSlideTab(songId, idx) {
-  openSlideIdx = idx;
-  renderLibrary();
-}
+window.toggleSongDetailGlobal = function(id) { toggleSongDetail(id); };
+window.setSlideTab = function(songId, idx) { openSlideIdx = idx; renderLibrary(); };
 
 // ── Init ──
 document.getElementById('songTitle').addEventListener('input', updateSubmitBtn);
 document.getElementById('songTags').addEventListener('input', renderTagPills);
 document.getElementById('sortTitleBtn').classList.add('on');
 
-loadSongs();
-updateLibCount();
-addSlide();
-updateSubmitBtn();
+// Initial load
+(async () => {
+  await loadSongs();
+  renderSlides();
+  updateSubmitBtn();
+  addSlide();
+})();
 </script>
 </body>
 </html>
