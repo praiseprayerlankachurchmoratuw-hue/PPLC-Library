@@ -714,6 +714,8 @@ textarea.input.sinhala { font-family: 'Noto Sans Sinhala', serif; font-size: 14p
 import { initializeApp }              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy }
                                       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                                      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 // ── Firebase config (same project as the React app) ──
 const firebaseConfig = {
@@ -725,8 +727,10 @@ const firebaseConfig = {
   appId:             '1:168353704965:web:36ee232ebba4f6aa0bc06c'
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
 
 // ── State ──
 let songs       = [];
@@ -1010,18 +1014,72 @@ function buildDetailPanel(song) {
 window.toggleSongDetailGlobal = function(id) { toggleSongDetail(id); };
 window.setSlideTab = function(songId, idx) { openSlideIdx = idx; renderLibrary(); };
 
-// ── Init ──
-document.getElementById('songTitle').addEventListener('input', updateSubmitBtn);
-document.getElementById('songTags').addEventListener('input', renderTagPills);
-document.getElementById('sortTitleBtn').classList.add('on');
+// ── Auth: sign in / sign out (exposed to global scope for onclick attributes) ──
+window.signInWithGoogle = async function() {
+  const btn     = document.getElementById('googleSignInBtn');
+  const spinner = document.getElementById('loginSpinner');
+  const errEl   = document.getElementById('loginError');
+  const btnText = document.getElementById('googleBtnText');
 
-// Initial load
-(async () => {
-  await loadSongs();
-  renderSlides();
-  updateSubmitBtn();
-  addSlide();
-})();
+  btn.disabled          = true;
+  spinner.style.display = '';
+  btnText.style.display = 'none';
+  errEl.classList.remove('show');
+
+  try {
+    await signInWithPopup(auth, provider);
+    // onAuthStateChanged below handles the UI transition
+  } catch (err) {
+    console.error('Sign-in error:', err);
+    errEl.textContent = err.message || 'Sign-in failed. Please try again.';
+    errEl.classList.add('show');
+    btn.disabled          = false;
+    spinner.style.display = 'none';
+    btnText.style.display = '';
+  }
+};
+
+window.signOutUser = async function() {
+  await signOut(auth);
+  // onAuthStateChanged handles UI transition back to login screen
+};
+
+// ── Auth state observer ──
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    // Hide login, show app
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = '';
+
+    // Populate user chip in topbar
+    document.getElementById('userChip').style.display = 'flex';
+    document.getElementById('userName').textContent = user.displayName || user.email || 'User';
+    if (user.photoURL) {
+      const photo = document.getElementById('userPhoto');
+      photo.src = user.photoURL;
+      photo.style.display = '';
+      document.getElementById('userPhotoFallback').style.display = 'none';
+    } else {
+      document.getElementById('userPhotoFallback').textContent =
+        (user.displayName || user.email || '?')[0].toUpperCase();
+    }
+
+    // Init the app now that we're authenticated
+    document.getElementById('songTitle').addEventListener('input', updateSubmitBtn);
+    document.getElementById('songTags').addEventListener('input', renderTagPills);
+    document.getElementById('sortTitleBtn').classList.add('on');
+
+    await loadSongs();
+    renderSlides();
+    updateSubmitBtn();
+    addSlide();
+  } else {
+    // Show login, hide app
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('userChip').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
